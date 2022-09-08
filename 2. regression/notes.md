@@ -133,8 +133,101 @@ rmse(y_val, y_pred)
 ```
 
 
+## Добавление новых фичей
+
+- Добавим фичи из даты (преобразуем в число)
+- Добавим фичи из категориальных переменных 
+  - (label encoding) не было примера
+  - one-hot encoding
 
 
+```python
+
+categories_list = ['make', 'model', 'condition', 'cylinders', 'fuel', 'title_status', 'transmission', 'drive', 'size', 'type', 'paint_color']
+categories = {}
+for c in categories_list:
+    categories[c] = list(df[c].value_counts().head().index)
+
+def prepare_X(df):
+    df = df.copy()
+    df['age'] = datetime.now().year - df.year
+    for v in [2,3,4]:
+        df[f'doors_{v}'] = (df.number_of_doors == v).astype(int)
+    
+    for c, values in categories.items():
+        for v in values:
+            df[f'{c}_{v}'] = (df[c] == v).astype(int)
+        
+    df_num = df.select_dtypes(include=['number'])
+    df_num = df_num.fillna(0)
+    X = df_num.values
+    return X
+```
+
+## Регуляризация
+
+Чтобы избежать переобучения, добавим регуляризацию
+Бывает, когда колонки в матрице X линейно зависимы, тогда решение не единственно
+
+Если решаем через линейное уравнение, то нужно добавить к XTX единичную матрицу с небольшим коэффициентом
+Параметр регуляризации - это коэффициент перед единичной матрицей
+
+
+```python
+
+def train_linear_regression_reg(X, y, r=0.01):
+    # r - коэффициент регуляризации
+    ones = np.ones(X.shape[0])
+    X = np.column_stack([ones, X])
+    XTX = X.T.dot(X)
+    XTX = XTX + r * np.eye(XTX.shape[0])
+    XTX_inv = np.linalg.inv(XTX)
+    w = XTX_inv.dot(X.T).dot(y)
+    return w[0], w[1:]
+```
+
+## Ищем лучшее значение для параметра регуляризации
+
+Он подбирается перебором, на валидационном наборе
+
+```python
+for r in [0, 0.0001, 0.001, 0.01, 0.1, 1, 10]:
+    X_train = prepare_X(df_train)
+    w0, w = train_linear_regression_reg(X_train, y_train, r=r)
+    X_val = prepare_X(df_val)
+    y_pred = w0 + X_val.dot(w)
+    print(r, rmse(y_val, y_pred))
+``` 
+
+# Тренируем модель на всех данных
+
+- pd.concat([df_train, df_val]).reset_index(drop=True) - объединяет датафреймы по строкам, сбрасывает индексы
+- np.concatenate([y_train, y_val]) - объединяет массивы по строкам
+
+```python
+df = pd.concat([df_train, df_val]).reset_index(drop=True) 
+y = np.concatenate([y_train, y_val])
+
+X = prepare_X(df)
+w0, w = train_linear_regression_reg(X, y, r=0.001)
+
+X_test = prepare_X(df_test)
+y_pred = w0 + X_test.dot(w)
+print(rmse(y_test, y_pred))
+```
+
+# Используем модель
+
+Сделаем вид, что данные нам пришли в виде словаря
+
+```python
+sample_x = df_test.iloc[20].to_dict()
+
+df_small = pd.DataFrame([sample_x])
+X_small = prepare_X(df_small)
+y_pred = w0 + X_small.dot(w)
+real_price = np.expm1(y_pred[0])
+```
 
 
 
