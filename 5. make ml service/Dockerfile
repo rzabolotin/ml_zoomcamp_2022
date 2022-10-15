@@ -1,6 +1,6 @@
 FROM svizor/zoomcamp-model:3.9.12-slim
 
-COPY Pipfile Pipfile.lock service_ml2.py .
+COPY Pipfile Pipfile.lock service_ml2.py ./
 
 RUN pip install pipenv
 
