@@ -1,0 +1,12 @@
+service: "service.py:svc"
+labels:
+  owner: rzabolotin@gmail.com
+  project: mlzoomcamp-aws-2022
+include:
+  - "*.py"
+python:
+  packages:
+    - numpy
+    - xgboost
+    - pydantic
+    - sklearn
