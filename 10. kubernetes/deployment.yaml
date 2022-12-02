@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: credit-card
+  labels:
+    app: credit-card
+spec:
+  selector:
+    matchLabels:
+      app: credit-card
+  replicas: 1
+  template:
+    metadata:
+      name: credit-card
+      labels:
+        app: credit-card
+    spec:
+      containers:
+        - name: credit-card
+          image: svizor42/zoomcamp-model:v001
+          resources:
+            requests:
+              cpu: 100m
+              memory: 64Mi
+            limits:
+              cpu: "1"
+              memory: 128Mi
+          ports:
+          - containerPort: 9696
+      restartPolicy: Always
